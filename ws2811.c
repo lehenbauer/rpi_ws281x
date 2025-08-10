@@ -669,8 +669,11 @@ static int set_driver_mode(ws2811_t *ws2811, int gpionum)
     else if (gpionum == 21 || gpionum == 31) {
         ws2811->device->driver_mode = PCM;
     }
-    else if (gpionum == 10) {
+    else if (gpionum == 10 || gpionum == 20) {
+		// set spi_bus to 0 for SPI0 if gpionum==10 (GPIO10/MOSI)
+		// or 1 for SPI1 if gpionum==20 (GPIO20/MOSI1)
         ws2811->device->driver_mode = SPI;
+		ws2811->device->spi_bus = (gpionum == 20) ? 1 : 0;
     }
     else {
         fprintf(stderr, "gpionum %d not allowed\n", gpionum);
@@ -732,6 +735,7 @@ static int check_hwver_and_gpionum(ws2811_t *ws2811)
         }
         for ( i = 0; i < (int)(sizeof(gpionums_40p) / sizeof(gpionums_40p[0])); i++)
         {
+			fprintf(stderr, "checking gpionum %d against %d\n", gpionum, gpionums_40p[i]);
             if (gpionums_40p[i] == gpionum) {
                 // Set driver mode (PWM, PCM, or SPI)
                 return set_driver_mode(ws2811, gpionum);
@@ -755,6 +759,7 @@ static ws2811_return_t spi_init(ws2811_t *ws2811)
 
 	char devnode[32];
 	snprintf(devnode, sizeof(devnode), "/dev/spidev%d.0", bus);
+	fprintf(stderr, "SPI bus is %d, using SPI device %s\n", bus, devnode);
     spi_fd = open(devnode, O_RDWR);
     if (spi_fd < 0) {
         fprintf(stderr, "Cannot open %s. spi_bcm2835 module not loaded?\n", devnode);
