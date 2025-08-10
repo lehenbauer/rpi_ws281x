@@ -792,10 +792,17 @@ static ws2811_return_t spi_init(ws2811_t *ws2811)
     {
         return WS2811_ERROR_SPI_SETUP;
     }
-    if (ioctl(spi_fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed) < 0)
+
+	// read back actual speed and sanity-check
+	uint32_t actual = 0;
+    if (ioctl(spi_fd, SPI_IOC_RD_MAX_SPEED_HZ, &actual) < 0)
     {
         return WS2811_ERROR_SPI_SETUP;
     }
+	fprintf(stderr, "SPI%d speed requested %u, actual %u\n", bus, speed, actual);
+	if (actual < 2200000 || actual > 2600000) {
+		fprintf(stderr, "WARN: SPI%d speed requested %u, actual %u - WS281x timing may be off!\n", bus, speed, actual);
+	}
 
     // Initialize device structure elements to not used
     // except driver_mode, spi_fd and max_count (already defined when spi_init called)
@@ -817,6 +824,7 @@ static ws2811_return_t spi_init(ws2811_t *ws2811)
 	// Set MOSI to the correct ALT: GPIO10=ALT0 for SPI0; GPIO20=ALT4 for SPI1
 	// GPIO10 is used for SPI0 on all models, GPIO20 is used for SPI1 on 40-pin models
 	// (gpio_function_set takes ALT index 0..5)
+	fprintf(stderr, "Setting GPIO%d to ALT%d for SPI%d\n", pinnum, bus ? 4 : 0, bus);
     gpio_function_set(device->gpio, pinnum, bus ? 4 : 0);
 
     // Allocate LED buffer
