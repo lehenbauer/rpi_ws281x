@@ -772,10 +772,12 @@ static ws2811_return_t spi_init(ws2811_t *ws2811)
     {
         return WS2811_ERROR_SPI_SETUP;
     }
+	fprintf(stderr, "SPI%d write mode set %u\n", bus, mode);
     if (ioctl(spi_fd, SPI_IOC_RD_MODE, &mode) < 0)
     {
         return WS2811_ERROR_SPI_SETUP;
     }
+	fprintf(stderr, "SPI%d read mode set %u\n", bus, mode);
 
     // Bits per word
     if (ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &bits) < 0)
