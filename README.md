@@ -5,7 +5,7 @@ Userspace Raspberry Pi library for controlling WS281X LEDs.
 This includes WS2812 and SK6812RGB RGB LEDs
 Preliminary support is now included for SK6812RGBW LEDs (yes, RGB + W)
 The LEDs can be controlled by either the PWM (2 independent channels)
-or PCM controller (1 channel) or the SPI interface (1 channel).
+or PCM controller (1 channel) or the SPI interfaces (2 independent channels).
 
 ### Bindings:
 
@@ -26,7 +26,9 @@ are well suited to driving individually controllable WS281X LEDs.
 Using the DMA, PWM or PCM FIFO, and serial mode in the PWM, it's
 possible to control almost any number of WS281X LEDs in a chain connected
 to the appropriate output pin.
-For SPI the Raspbian spidev driver is used (`/dev/spidev0.0`).
+
+For SPI the Raspberry Pi Debian spidev driver is used (`/dev/spidev0.0` and/or `/dev/spidev1.0`).
+
 This library and test program set the clock rate to 3X the desired output
 frequency and creates a bit pattern in RAM from an array of colors where
 each bit is represented by 3 bits as follows.
@@ -60,6 +62,7 @@ PCM:
 SPI:
 ```
         SPI0-MOSI is available on GPIOs 10 and 38.
+		SPI1-MOSI on GPIO 20 on Pis with a 40 pin GPIO header.
         Only GPIO 10 is available on all models.
         See also note for RPi 3 below.
 ```
@@ -201,8 +204,8 @@ Do this by adding the following lines to /boot/config.txt and reboot:
     core_freq_min=500
 ```
 
-SPI requires you to be in the `gpio` group if you wish to control your LEDs
-without root.
+SPI requires you to be in the `gpio` group and is a great choice
+if you wish to control your LEDs without being root.
 
 ### Comparison PWM/PCM/SPI
 

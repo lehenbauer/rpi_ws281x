@@ -104,6 +104,7 @@ typedef struct ws2811_device
     volatile gpio_t *gpio;
     volatile cm_clk_t *cm_clk;
     videocore_mbox_t mbox;
+	int spi_bus; /* 0 => SPI0 (/dev/spidev0.x), 1 => SPI1 (/dev/spidev1.x) */
     int max_count;
 } ws2811_device_t;
 
@@ -687,7 +688,7 @@ static int check_hwver_and_gpionum(ws2811_t *ws2811)
     int hwver, gpionum;
     int gpionums_B1[] = { 10, 18, 21 };
     int gpionums_B2[] = { 10, 18, 31 };
-    int gpionums_40p[] = { 10, 12, 18, 21};
+    int gpionums_40p[] = { 10, 12, 18, 20, 21};
     int i;
 
     rpi_hw = ws2811->rpi_hw;
@@ -750,10 +751,13 @@ static ws2811_return_t spi_init(ws2811_t *ws2811)
     ws2811_device_t *device = ws2811->device;
     uint32_t base = ws2811->rpi_hw->periph_base;
     int pinnum = ws2811->channel[0].gpionum;
+	int bus = device->spi_bus;
 
-    spi_fd = open("/dev/spidev0.0", O_RDWR);
+	char devnode[32];
+	snprintf(devnode, sizeof(devnode), "/dev/spidev%d.0", bus);
+    spi_fd = open(devnode, O_RDWR);
     if (spi_fd < 0) {
-        fprintf(stderr, "Cannot open /dev/spidev0.0. spi_bcm2835 module not loaded?\n");
+        fprintf(stderr, "Cannot open %s. spi_bcm2835 module not loaded?\n", devnode);
         return WS2811_ERROR_SPI_SETUP;
     }
     device->spi_fd = spi_fd;
@@ -805,7 +809,10 @@ static ws2811_return_t spi_init(ws2811_t *ws2811)
     {
         return WS2811_ERROR_SPI_SETUP;
     }
-    gpio_function_set(device->gpio, pinnum, 0);	// SPI-MOSI ALT0
+	// Set MOSI to the correct ALT: GPIO10=ALT0 for SPI0; GPIO20=ALT4 for SPI1
+	// GPIO10 is used for SPI0 on all models, GPIO20 is used for SPI1 on 40-pin models
+	// (gpio_function_set takes ALT index 0..5)
+    gpio_function_set(device->gpio, pinnum, bus ? 4 : 0);
 
     // Allocate LED buffer
     ws2811_channel_t *channel = &ws2811->channel[0];
